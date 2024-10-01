@@ -123,6 +123,11 @@
 
 <div class="container">
   <h1>计算器</h1>
+
+  <!-- 添加汇率调整字段 -->
+  <label for="exchange-rate">调整汇率（RMB to JPY）：</label>
+  <input type="text" id="exchange-rate" value="0.049" placeholder="输入汇率">
+
   <div class="tabs">
     <button id="rmb-tab" class="active">RMB</button>
     <button id="jpy-tab">JPY</button>
@@ -206,14 +211,25 @@
     document.getElementById(`${tab}-content`).classList.add('active');
   }
 
+  // 获取用户输入的汇率
+  function getExchangeRate() {
+    const exchangeRate = parseFloat(document.getElementById('exchange-rate').value);
+    if (isNaN(exchangeRate) || exchangeRate <= 0) {
+      alert('请输入有效的汇率');
+      return 0.049;  // 默认汇率
+    }
+    return exchangeRate;
+  }
+
   // 计算人民币转日元
   function calculateRMBToJPY() {
     const rmbPrice = parseFloat(document.getElementById('rmb-price').value);
+    const exchangeRate = getExchangeRate(); // 获取汇率
     if (!rmbPrice || rmbProfitRate === 0) {
       alert('请输入人民币价格并选择目标利润率');
       return;
     }
-    const jpyPrice = ((1 + rmbProfitRate) * ((rmbPrice + shippingFee) / 0.049)) / 0.93;
+    const jpyPrice = ((1 + rmbProfitRate) * ((rmbPrice + shippingFee) / exchangeRate)) / 0.93;
     document.getElementById('rmb-result').textContent = jpyPrice.toFixed(2);
     document.getElementById('rmb-profit').textContent = (rmbPrice * rmbProfitRate).toFixed(2);
   }
@@ -221,18 +237,20 @@
   // 计算日元转人民币
   function calculateJPYToRMB() {
     const jpyPrice = parseFloat(document.getElementById('jpy-price').value);
+    const exchangeRate = getExchangeRate(); // 获取汇率
     if (!jpyPrice || jpyProfitRate === 0) {
       alert('请输入日元价格并选择目标利润率');
       return;
     }
-    const rmbPrice = (jpyPrice * 0.93 * 0.049 - shippingFee) / (1 + jpyProfitRate);
+    const rmbPrice = (jpyPrice * 0.93 * exchangeRate - shippingFee) / (1 + jpyProfitRate);
     document.getElementById('jpy-result').textContent = rmbPrice.toFixed(2);
     document.getElementById('jpy-profit').textContent = (rmbPrice * jpyProfitRate).toFixed(2);
   }
 
   // 初始化
   createProfitRateButtons();
-// 注册Service Worker
+
+  // 注册Service Worker
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', function() {
       navigator.serviceWorker.register('service-worker.js').then(function(registration) {
