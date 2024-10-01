@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Calculator</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      margin: 0;
+    }
+
+    h1 {
+      text-align: center;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+      border: 2px solid #e2e8f0;
+      border-radius: 10px;
+      background-color: #f7fafc;
+    }
+
+    .tabs {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+
+    .tabs button {
+      flex-grow: 1;
+      padding: 10px;
+      cursor: pointer;
+      background-color: #edf2f7;
+      border: 1px solid #cbd5e0;
+      border-radius: 5px;
+      margin-right: 5px;
+    }
+
+    .tabs button.active {
+      background-color: #f56565;
+      color: white;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      border: 1px solid #cbd5e0;
+      border-radius: 5px;
+    }
+
+    .profit-rates {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+
+    .badge {
+      padding: 10px;
+      margin: 5px;
+      cursor: pointer;
+      background-color: #f56565;
+      color: white;
+      border-radius: 5px;
+    }
+
+    .badge.active {
+      background-color: #e53e3e;
+    }
+
+    .result {
+      text-align: center;
+      margin-top: 20px;
+      font-size: 1.2em;
+    }
+
+    .button {
+      display: block;
+      width: 100%;
+      text-align: center;
+      padding: 10px;
+      background-color: #48bb78;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .button:hover {
+      background-color: #38a169;
+    }
+
+    /* Responsive Styles */
+    @media (max-width: 768px) {
+      .container {
+        padding: 10px;
+      }
+
+      .tabs button {
+        font-size: 0.9em;
+      }
+
+      input[type="text"] {
+        padding: 8px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>计算器</h1>
+  <div class="tabs">
+    <button id="rmb-tab" class="active">RMB</button>
+    <button id="jpy-tab">JPY</button>
+  </div>
+
+  <div id="rmb-content" class="tab-content active">
+    <label>人民币收价</label>
+    <input type="text" id="rmb-price" placeholder="输入人民币价格">
+    <label>目标利润率</label>
+    <div class="profit-rates" id="rmb-profit-rates"></div>
+    <button class="button" onclick="calculateRMBToJPY()">计算</button>
+    <div class="result">
+      建议零售价（JPY）：<span id="rmb-result">0</span><br>
+      利润：<span id="rmb-profit">0</span>
+    </div>
+  </div>
+
+  <div id="jpy-content" class="tab-content">
+    <label>日元售价</label>
+    <input type="text" id="jpy-price" placeholder="输入日元价格">
+    <label>目标利润率</label>
+    <div class="profit-rates" id="jpy-profit-rates"></div>
+    <button class="button" onclick="calculateJPYToRMB()">计算</button>
+    <div class="result">
+      建议收货价（RMB）：<span id="jpy-result">0</span><br>
+      利润：<span id="jpy-profit">0</span>
+    </div>
+  </div>
+</div>
+
+<script>
+  // 利润率数组
+  const profitRates = [0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0];
+  let rmbProfitRate = 0;
+  let jpyProfitRate = 0;
+  const shippingFee = 100;
+
+  // 初始化利润率按钮
+  function createProfitRateButtons() {
+    const rmbContainer = document.getElementById('rmb-profit-rates');
+    const jpyContainer = document.getElementById('jpy-profit-rates');
+
+    profitRates.forEach(rate => {
+      const rmbBadge = document.createElement('div');
+      rmbBadge.className = 'badge';
+      rmbBadge.textContent = rate;
+      rmbBadge.onclick = () => selectProfitRate(rmbBadge, rate, 'rmb');
+      rmbContainer.appendChild(rmbBadge);
+
+      const jpyBadge = document.createElement('div');
+      jpyBadge.className = 'badge';
+      jpyBadge.textContent = rate;
+      jpyBadge.onclick = () => selectProfitRate(jpyBadge, rate, 'jpy');
+      jpyContainer.appendChild(jpyBadge);
+    });
+  }
+
+  // 切换利润率按钮
+  function selectProfitRate(badge, rate, type) {
+    const badges = document.querySelectorAll(`#${type}-profit-rates .badge`);
+    badges.forEach(b => b.classList.remove('active'));
+    badge.classList.add('active');
+    if (type === 'rmb') rmbProfitRate = rate;
+    if (type === 'jpy') jpyProfitRate = rate;
+  }
+
+  // 切换选项卡
+  document.getElementById('rmb-tab').onclick = function () {
+    switchTab('rmb');
+  };
+  document.getElementById('jpy-tab').onclick = function () {
+    switchTab('jpy');
+  };
+
+  function switchTab(tab) {
+    document.getElementById('rmb-tab').classList.remove('active');
+    document.getElementById('jpy-tab').classList.remove('active');
+    document.getElementById(`${tab}-tab`).classList.add('active');
+    document.getElementById('rmb-content').classList.remove('active');
+    document.getElementById('jpy-content').classList.remove('active');
+    document.getElementById(`${tab}-content`).classList.add('active');
+  }
+
+  // 计算人民币转日元
+  function calculateRMBToJPY() {
+    const rmbPrice = parseFloat(document.getElementById('rmb-price').value);
+    if (!rmbPrice || rmbProfitRate === 0) {
+      alert('请输入人民币价格并选择目标利润率');
+      return;
+    }
+    const jpyPrice = ((1 + rmbProfitRate) * ((rmbPrice + shippingFee) / 0.049)) / 0.93;
+    document.getElementById('rmb-result').textContent = jpyPrice.toFixed(2);
+    document.getElementById('rmb-profit').textContent = (rmbPrice * rmbProfitRate).toFixed(2);
+  }
+
+  // 计算日元转人民币
+  function calculateJPYToRMB() {
+    const jpyPrice = parseFloat(document.getElementById('jpy-price').value);
+    if (!jpyPrice || jpyProfitRate === 0) {
+      alert('请输入日元价格并选择目标利润率');
+      return;
+    }
+    const rmbPrice = (jpyPrice * 0.93 * 0.049 - shippingFee) / (1 + jpyProfitRate);
+    document.getElementById('jpy-result').textContent = rmbPrice.toFixed(2);
+    document.getElementById('jpy-profit').textContent = (rmbPrice * jpyProfitRate).toFixed(2);
+  }
+
+  // 初始化
+  createProfitRateButtons();
+</script>
+
+</body>
+</html>
